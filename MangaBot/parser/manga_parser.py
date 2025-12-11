@@ -1,4 +1,5 @@
 import asyncio
+import os
 import time
 import json
 from selenium.webdriver.chrome.service import Service
@@ -6,15 +7,19 @@ from selenium import webdriver
 from concurrent.futures import ThreadPoolExecutor
 from MangaBot.database.db import save_manga_and_chapter
 from selenium.webdriver.common.by import By
+from dotenv import load_dotenv
 
+load_dotenv()
 
-WINDOWS_PATH_DRIVER = "D:\\python progect\\\Posting_vk_bot\\folder\\chromedriver.exe"
-LINUX_PATH_DRIVER = "/usr/bin/chromedriver"
+WINDOWS_PATH_DRIVER = os.getenv("WINDOWS_PATH_DRIVER")
+LINUX_PATH_DRIVER = os.getenv("LINUX_PATH_DRIVER")
 
 # https://api.mangalib.me/api/manga/179033--a-super-villain-daily-life?fields[]=summary
 # Вот запрос чтобы вытянуть описание у манги, там еще можно много чего вытянуть если знать фильтры
 
 # Функция для запуска синхронного кода в асинхронном контексте
+
+
 def sync_parse():
     options = webdriver.ChromeOptions()
 
@@ -46,11 +51,10 @@ def sync_parse():
             except:
                 Volume = 1
                 Chapter = 1
-            
+
             _dict["new_chapter"] = f"Том {Volume} Глава {Chapter}"
             _dict["new_chapter_link"] = f"https://mangalib.org/ru/{item['slug_url']}/read/v{Volume}/c{Chapter}"
-        
-            
+
             _dict["photo_url"] = item["cover"]["default"]
             _dict["thumbnail_url"] = item["cover"]["thumbnail"]
 
@@ -66,7 +70,6 @@ def sync_parse():
     driver.close()
     driver.quit()
     return result_dict
-
 
 
 # Асинхронная обертка для функции парсинга
