@@ -1,0 +1,26 @@
+# Виртуальное окружение
+venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyc
+*.db
+
+
+*.json
+
+# Переменные окружения
+.env
+!.env.example
+
+
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
