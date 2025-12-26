@@ -42,7 +42,7 @@ class Remanga(BaseModel):
         manga_dir = raw.title.dir
         manga_url = f"{BASE_URL}/manga/{manga_dir}"
         chapter_number = f"Том {raw.tome} Глава {raw.chapter}"
-        chapter_url = f"{manga_url}/chapter/{raw.chapter}"
+        chapter_url = f"{manga_url}/{raw.id}" 
         photo_url = f"{BASE_URL}{raw.title.cover.get('high', raw.title.cover.get('mid', ''))}"
         thumbnail_url = f"{BASE_URL}{raw.title.cover.get('low', "")}"
 
