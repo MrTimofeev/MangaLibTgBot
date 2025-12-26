@@ -7,7 +7,7 @@ from MangaBot.bot.config import *
 import uuid
 from MangaBot.database.db import create_user, init_db, add_subscription_for_user, remove_subscription_for_user, get_user_subscriptions, get_manga, check_manga_by_id_in_db, get_random_manga, remove_all_subscriptions_for_user, count_user_subscriptions
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from MangaBot.parser.manga_parser import parse_manga
+from MangaBot.parser.mangalib_parser import parse_manga
 
 dp_Manga_Bot = Dispatcher(storage=MemoryStorage())
 router = Router()
