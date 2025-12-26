@@ -4,43 +4,45 @@ import time
 import json
 import requests
 import pprint
+import httpx
+import asyncio
 
-# import asyncio
+from models.Mangalib_model import Mangalib
+from pydantic import ValidationError
+
 
 # from concurrent.futures import ThreadPoolExecutor
 # from MangaBot.database.db import save_manga_and_chapter
 
-# https://api.mangalib.me/api/manga/179033--a-super-villain-daily-life?fields[]=summary
-# Вот запрос чтобы вытянуть описание у манги, там еще можно много чего вытянуть если знать фильтры
 
-# Функция для запуска синхронного кода в асинхронном контексте
+
+HEADERS = {
+    'accept': '*/*',
+    'accept-language': 'ru-RU,ru;q=0.9',
+    'client-time-zone': 'Europe/Moscow',
+    'content-type': 'application/json',
+    'dnt': '1',
+    'origin': 'https://mangalib.me',
+    'priority': 'u=1, i',
+    'referer': 'https://mangalib.me/',
+    'sec-ch-ua': '"Google Chrome";v="143", "Chromium";v="143", "Not A(Brand";v="24"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"Windows"',
+    'sec-fetch-dest': 'empty',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-site': 'cross-site',
+    'site-id': '1',
+    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36',
+}
+
+PARAMS = {
+    'page': '1',
+}
 
 
 def sync_parse():
-    headers = {
-        'accept': '*/*',
-        'accept-language': 'ru-RU,ru;q=0.9',
-        'client-time-zone': 'Europe/Moscow',
-        'content-type': 'application/json',
-        'dnt': '1',
-        'origin': 'https://mangalib.me',
-        'priority': 'u=1, i',
-        'referer': 'https://mangalib.me/',
-        'sec-ch-ua': '"Google Chrome";v="143", "Chromium";v="143", "Not A(Brand";v="24"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-platform': '"Windows"',
-        'sec-fetch-dest': 'empty',
-        'sec-fetch-mode': 'cors',
-        'sec-fetch-site': 'cross-site',
-        'site-id': '1',
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36',
-    }
-
-    params = {
-        'page': '1',
-    }
     response = requests.get(
-        'https://api.cdnlibs.org/api/latest-updates', params=params, headers=headers)
+        'https://api.cdnlibs.org/api/latest-updates', params=PARAMS, headers=HEADERS)
 
     result_dict = []
     try:
@@ -74,8 +76,36 @@ def sync_parse():
     return result_dict
 
 
-sync_parse()
+# data = sync_parse()
 
+
+
+
+async def new_chapter():
+    async with httpx.AsyncClient() as client:
+        response = await client.get('https://api.cdnlibs.org/api/latest-updates', headers=HEADERS, params=PARAMS)
+
+        data = response.json()
+        
+        # pprint.pprint(data)
+
+        chapters = []
+        
+        for item in data["data"]:
+            try:
+                chapter = Mangalib(**item)
+                chapters.append(chapter)
+                print(f"{chapter.title} - {chapter.chapter_number}")
+                # pprint.pprint(chapter)
+            except ValidationError as e:
+                print("Ошибка парсинга главы:")
+                for err in e.errors():
+                    print(f"  {err["loc"] - {err['msg']}}")
+                continue
+        
+
+
+asyncio.run(new_chapter())
 
 # # Асинхронная обертка для функции парсинга
 # async def parse_manga(bot):
