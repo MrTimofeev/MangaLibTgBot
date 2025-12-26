@@ -1,38 +1,47 @@
 import asyncio
 import time
 import json
-from selenium.webdriver.chrome.service import Service
-from selenium import webdriver
-from selenium.webdriver.common.by import By
+import requests
 from MangaBot.database.db import save_manga, init_db
 
 # https://api.mangalib.me/api/manga/179033--a-super-villain-daily-life?fields[]=summary
 # Вот запрос чтобы вытянуть описание у манги, там еще можно много чего вытянуть если знать фильтры
 
 # Функция для запуска синхронного кода в асинхронном контексте
+
+
 async def sync_parse():
-    options = webdriver.ChromeOptions()
+    headers = {
+        'accept': '*/*',
+        'accept-language': 'ru-RU,ru;q=0.9',
+        'client-time-zone': 'Europe/Moscow',
+        'content-type': 'application/json',
+        'dnt': '1',
+        'origin': 'https://mangalib.org',
+        'priority': 'u=1, i',
+        'referer': 'https://mangalib.org/',
+        'sec-ch-ua': '"Google Chrome";v="143", "Chromium";v="143", "Not A(Brand";v="24"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"',
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'cross-site',
+        'site-id': '1',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36',
+    }
 
-    options.add_argument(
-        'user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36')
-
-    # Run in the background
-    options.add_argument("--headless")
-
-    s = Service(
-        executable_path="D:\\python progect\\\Posting_vk_bot\\folder\\chromedriver.exe")
-    driver = webdriver.Chrome(service=s, options=options)
-    count = 698
+    count = 0
     flag = True
     while flag:
-        driver.get(url=f"https://api.mangalib.me/api/manga?page={count}")
+        response = requests.get(
+            'https://api.cdnlibs.org/api/manga?page=1&site_id[]=1',
+            headers=headers,
+)
         time.sleep(2)
-
-        json_data = driver.find_element(By.TAG_NAME, 'pre')
 
         result_dict = []
         try:
-            data = json.loads(json_data.text)
+            data = json.loads(response.text)
             if data["meta"]["has_next_page"] == False:
                 flag = False
 
@@ -68,9 +77,6 @@ async def sync_parse():
         except json.JSONDecodeError:
             print("Ошибка: данные не в формате JSON")
 
-
-    driver.close()
-    driver.quit()
 
 async def on_startup():
     await init_db()
