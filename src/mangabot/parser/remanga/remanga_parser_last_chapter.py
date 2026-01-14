@@ -1,6 +1,6 @@
 import requests
 import httpx
-from models.Remanga_model import Remanga
+from mangabot.models.remanga_model import Remanga
 from pydantic import ValidationError
 import asyncio
 
@@ -28,9 +28,11 @@ PARAMS = {
     'page': '1',
 }
 
+
 def sync_pars():
 
-    response = requests.get('https://api.remanga.org/api/v2/titles/last-chapters/', params=PARAMS, headers=HEADERS)
+    response = requests.get(
+        'https://api.remanga.org/api/v2/titles/last-chapters/', params=PARAMS, headers=HEADERS)
 
     pprint.pprint(response.json())
 
@@ -38,22 +40,22 @@ def sync_pars():
 async def new_chapter():
     async with httpx.AsyncClient() as client:
         response = await client.get('https://api.remanga.org/api/v2/titles/last-chapters/', headers=HEADERS, params=PARAMS)
-        
+
         data = response.json()
-        
+
         chapters = []
-        
+
         for item in data["results"]:
             try:
                 chapter = Remanga(**item)
                 chapters.append(chapter)
-                print(f"{chapter.title} - {chapter.chapter_number}")
+                pprint.pprint(chapter)
+                break
             except ValidationError as e:
                 print("Ошибка парсинга главы:")
                 for err in e.errors():
                     print(f"  {err["loc"] - {err['msg']}}")
                 continue
-            
-            
 
 asyncio.run(new_chapter())
+

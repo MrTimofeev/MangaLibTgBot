@@ -2,7 +2,7 @@ import asyncio
 import time
 import json
 import requests
-from MangaBot.database.db import save_manga, init_db
+from mangabot.database.db import save_manga, init_db
 
 # https://api.mangalib.me/api/manga/179033--a-super-villain-daily-life?fields[]=summary
 # Вот запрос чтобы вытянуть описание у манги, там еще можно много чего вытянуть если знать фильтры

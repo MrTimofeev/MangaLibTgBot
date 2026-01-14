@@ -3,11 +3,11 @@ from aiogram import Dispatcher, types, Router, F
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
-from MangaBot.bot.config import *
+from mangabot.bot.config import *
 import uuid
-from MangaBot.database.db import create_user, init_db, add_subscription_for_user, remove_subscription_for_user, get_user_subscriptions, get_manga, check_manga_by_id_in_db, get_random_manga, remove_all_subscriptions_for_user, count_user_subscriptions
+from mangabot.database.db import create_user, init_db, add_subscription_for_user, remove_subscription_for_user, get_user_subscriptions, get_manga, check_manga_by_id_in_db, get_random_manga, remove_all_subscriptions_for_user, count_user_subscriptions
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from MangaBot.parser.mangalib_parser import parse_manga
+from mangabot.parser.mangalib.mangalib_parser_last_chapter import parse_manga
 
 dp_Manga_Bot = Dispatcher(storage=MemoryStorage())
 router = Router()

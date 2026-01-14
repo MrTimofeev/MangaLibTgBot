@@ -24,3 +24,9 @@ __pycache__/
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+
+# Python packaging
+*.egg-info/
+*.egg
+build/
+dist/

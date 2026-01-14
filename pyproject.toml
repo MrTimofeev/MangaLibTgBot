@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mangabot"
+version = "0.1.0"
+description = "Telegram bot for tracking manga updates"
+dependencies = [
+    "aiogram>=3.22.0",
+    "requests>=2.32.5",
+    "httpx>=0.28.1",
+    "selenium>=4.38.0",        # только если реально используешь
+    "python-dotenv>=1.2.1",
+    "pydantic>=2.11.10",
+    "SQLAlchemy>=2.0.44",
+    "aiosqlite>=0.21.0",       # если используешь SQLite с async
+    "APScheduler>=3.11.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["mangabot*"]
+
+[tool.setuptools.package-dir]
+"" = "src"

@@ -1,19 +1,16 @@
 # import asyncio
-import os
-import time
 import json
 import requests
 import pprint
 import httpx
 import asyncio
 
-from models.Mangalib_model import Mangalib
+from mangabot.models.mangalib_model import Mangalib
 from pydantic import ValidationError
 
 
 # from concurrent.futures import ThreadPoolExecutor
 # from MangaBot.database.db import save_manga_and_chapter
-
 
 
 HEADERS = {
@@ -79,18 +76,16 @@ def sync_parse():
 # data = sync_parse()
 
 
-
-
 async def new_chapter():
     async with httpx.AsyncClient() as client:
         response = await client.get('https://api.cdnlibs.org/api/latest-updates', headers=HEADERS, params=PARAMS)
 
         data = response.json()
-        
+
         # pprint.pprint(data)
 
         chapters = []
-        
+
         for item in data["data"]:
             try:
                 chapter = Mangalib(**item)
@@ -102,7 +97,6 @@ async def new_chapter():
                 for err in e.errors():
                     print(f"  {err["loc"] - {err['msg']}}")
                 continue
-        
 
 
 asyncio.run(new_chapter())
