@@ -27,7 +27,7 @@ class Remanga(BaseModel):
     chapter_url: str
     photo_url: str
     thumbnail_url: str
-
+    source: str
     model_config = ConfigDict(extra="ignore")
 
     @model_validator(mode='before')
@@ -45,7 +45,7 @@ class Remanga(BaseModel):
         chapter_url = f"{manga_url}/{raw.id}" 
         photo_url = f"{BASE_URL}{raw.title.cover.get('high', raw.title.cover.get('mid', ''))}"
         thumbnail_url = f"{BASE_URL}{raw.title.cover.get('low', "")}"
-
+        source = "remanga"
         return {
             "id": raw.id,
             "title": title,
@@ -53,5 +53,6 @@ class Remanga(BaseModel):
             "chapter_number": chapter_number,
             "chapter_url": chapter_url,
             "photo_url": photo_url,
-            "thumbnail_url": thumbnail_url
+            "thumbnail_url": thumbnail_url,
+            "source": source
         }

@@ -38,7 +38,7 @@ class Mangalib(BaseModel):
     chapter_url: str
     photo_url: str
     thumbnail_url: str
-    
+    source: str
     model_config = ConfigDict(extra="ignore")
 
     @model_validator(mode='before')
@@ -64,7 +64,7 @@ class Mangalib(BaseModel):
         chapter_url = f"{BASE_URL}/ru/{raw.slug_url}/read/v{last_chapter.volume}/c{last_chapter.number}"
         photo_url = f"{raw.cover.get('default', "")}"
         thumbnail_url = f"{raw.cover.get('thumbnail', "")}"
-
+        source = "mangalib"
         return {
             "id": raw.id,
             "title": title,
@@ -72,7 +72,8 @@ class Mangalib(BaseModel):
             "chapter_number": chapter_number,
             "chapter_url": chapter_url,
             "photo_url": photo_url,
-            "thumbnail_url": thumbnail_url
+            "thumbnail_url": thumbnail_url,
+            "source": source
         }
 
     
