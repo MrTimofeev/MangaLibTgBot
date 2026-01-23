@@ -16,6 +16,7 @@ dependencies = [
     "SQLAlchemy>=2.0.44",
     "aiosqlite>=0.21.0",       # если используешь SQLite с async
     "APScheduler>=3.11.1",
+    "alembic>=1.13.0",
 ]
 
 [tool.setuptools.packages.find]
