@@ -1,71 +1,12 @@
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import Column, Integer, String, ForeignKey, func, delete
-from sqlalchemy.orm import relationship, sessionmaker, declarative_base
+from mangabot.database.model import User, Manga, Chapter, Subscription
+
 from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload
+from sqlalchemy import func, delete
 
+from mangabot.database.session import AsyncSessionLocal
+from mangabot.bot.message import message_last_hapter_subsribe
 import random
-
-
-# Создаем базовый класс для моделей
-Base = declarative_base()
-
-# Модель для пользователя
-
-
-class User(Base):
-    __tablename__ = 'users'
-    id = Column(Integer, primary_key=True, index=True)
-    telegram_id = Column(Integer, unique=True, index=True)
-    username = Column(String, index=True)
-
-    subscriptions = relationship('Subscription', back_populates='user')
-
-# Модель для манги
-
-
-class Manga(Base):
-    __tablename__ = 'manga'
-
-    id = Column(Integer, primary_key=True)
-    title = Column(String, nullable=False)
-    url = Column(String, nullable=False)
-    last_chapter_number = Column(String)
-    last_chapter_url = Column(String)
-    photo_url = Column(String)
-    thumbnail_url = Column(String)
-
-    chapters = relationship('Chapter', back_populates='manga')
-    subscriptions = relationship('Subscription', back_populates='manga')
-
-# Модель для главы
-
-
-class Chapter(Base):
-    __tablename__ = 'chapters'
-
-    id = Column(Integer, primary_key=True)
-    manga_id = Column(Integer, ForeignKey('manga.id'), nullable=False)
-    chapter_number = Column(Integer, nullable=False)
-    chapter_url = Column(String, nullable=False)
-
-    manga = relationship('Manga', back_populates='chapters')
-
-# Модель для подписки
-
-
-class Subscription(Base):
-    __tablename__ = 'subscriptions'
-
-    user_id = Column(Integer, ForeignKey(
-        'users.telegram_id'), primary_key=True)
-    manga_id = Column(Integer, ForeignKey('manga.id'), primary_key=True)
-    last_notified_chapter = Column(Integer)
-
-    user = relationship('User', back_populates='subscriptions')
-    manga = relationship('Manga', back_populates='subscriptions')
 
 
 async def create_user(telegram_id: int, username: str, message):
@@ -90,7 +31,8 @@ async def create_user(telegram_id: int, username: str, message):
 async def get_manga(search_text: str = ""):
     async with AsyncSessionLocal() as session:
         query = select(Manga).where(
-            Manga.title.ilike(f"%{search_text}%")  # Поиск без учета регистра
+            # Поиск без учета регистра
+            Manga.search_title.ilike(f"%{search_text}%")
         ).limit(40)  # Ограничение на 40 записей
         result = await session.execute(query)
         return result.scalars().all()
@@ -101,6 +43,7 @@ async def get_manga_by_title(title: str):
         result = await session.execute(select(Manga).filter_by(title=title))
         manga = result.scalars().first()
         return manga
+
 
 async def update_manga_titles_to_lowercase():
     async with AsyncSessionLocal() as session:
@@ -117,6 +60,7 @@ async def update_manga_titles_to_lowercase():
 
         print(f"Обновлено названий манги: {len(mangas)}")
 
+
 async def get_user_by_telegram_id(telegram_id: int):
     async with AsyncSessionLocal() as session:
         result = await session.execute(select(User).filter_by(telegram_id=telegram_id))
@@ -132,25 +76,28 @@ async def get_subscriptions_for_user(user_id: int):
         return subscriptions
 
 
-async def save_manga(title: str, manga_url: str, chapter_number: str, chapter_url: str, photo_url: str, thumbnail_url: str):
+async def save_manga(title: str, search_title: str, manga_url: str, chapter_number: str, chapter_url: str, photo_url: str, thumbnail_url: str, source: str):
     async with AsyncSessionLocal() as session:
         # Проверяем, существует ли манга в базе
-        result = await session.execute(select(Manga).filter_by(title=title))
+        result = await session.execute(select(Manga).filter_by(title=title, source=source))
         manga = result.scalars().first()
 
         if not manga:
             # Если манги нет, создаем новую запись
             new_manga = Manga(
                 title=title,
+                search_title=search_title,
                 url=manga_url,
                 last_chapter_number=chapter_number,
                 last_chapter_url=chapter_url,
                 photo_url=photo_url,
-                thumbnail_url=thumbnail_url
+                thumbnail_url=thumbnail_url,
+                source=source
             )
             session.add(new_manga)
             await session.commit()
             await session.refresh(new_manga)
+
 
 def parse_chapter_number(chapter_number: str) -> tuple[int, float]:
     """
@@ -162,6 +109,7 @@ def parse_chapter_number(chapter_number: str) -> tuple[int, float]:
     volume = int(parts[1])  # 'Том X'
     chapter = float(parts[3])  # 'Глава Y' или 'Глава 32.1'
     return volume, chapter
+
 
 def is_new_chapter(current: str, new: str) -> bool:
     """Сравнивает две главы по томам и номерам."""
@@ -175,7 +123,8 @@ def is_new_chapter(current: str, new: str) -> bool:
         return True
     return False
 
-async def save_manga_and_chapter(title: str, manga_url: str, chapter_number: str, chapter_url: str, photo_url: str, thumbnail_url: str, bot):
+
+async def save_manga_and_chapter(title: str, search_title: str, manga_url: str, chapter_number: str, chapter_url: str, photo_url: str, thumbnail_url: str, source: str, bot):
     async with AsyncSessionLocal() as session:
         # Проверяем, существует ли манга в базе
         result = await session.execute(select(Manga).filter_by(title=title))
@@ -185,11 +134,13 @@ async def save_manga_and_chapter(title: str, manga_url: str, chapter_number: str
             # Если манги нет, создаем новую запись
             new_manga = Manga(
                 title=title,
+                search_title=search_title,
                 url=manga_url,
                 last_chapter_number=chapter_number,
                 last_chapter_url=chapter_url,
                 photo_url=photo_url,
-                thumbnail_url=thumbnail_url
+                thumbnail_url=thumbnail_url,
+                source=source
             )
             session.add(new_manga)
             await session.commit()
@@ -232,10 +183,7 @@ async def save_manga_and_chapter(title: str, manga_url: str, chapter_number: str
                         # Отправка сообщения пользователю
                         await bot.send_message(
                             subscription.user_id,
-                            f"""
-<b>Новая глава манги {title}!\nГлава {chapter_number}</b>
-Ссылка на последнюю главу: <a href="{chapter_url}">читать</a>
-"""
+                            message_last_hapter_subsribe(title, chapter_number, chapter_url)
                         )
                         # Обновляем последнюю уведомленную главу
                         subscription.last_notified_chapter = manga.last_chapter_number
@@ -253,7 +201,7 @@ async def add_subscription_for_user(user_id: int, manga: Manga) -> bool:
 
         if subscription:
             return False  # Пользователь уже подписан на эту мангу
-        
+
         # Добавляем подписку
         new_subscription = Subscription(
             user_id=user_id, manga_id=manga.id, last_notified_chapter=manga.last_chapter_number)
@@ -270,14 +218,15 @@ async def check_manga_by_id_in_db(id) -> Manga:
         manga = result.scalars().first()
         return manga
 
+
 async def get_random_manga() -> Manga:
     async with AsyncSessionLocal() as session:
         result = await session.execute(select(func.count(Manga.id)))
         count_manga = result.scalar()  # Получаем количество манг
 
         if count_manga == 0:
-            raise ValueError("В таблице нет записей")  # Обработка пустой таблицы
-        
+            # Обработка пустой таблицы
+            raise ValueError("В таблице нет записей")
 
         random_id_manga = random.randint(1, count_manga)
         return await check_manga_by_id_in_db(random_id_manga)
@@ -286,7 +235,8 @@ async def get_random_manga() -> Manga:
 async def count_user_subscriptions(user_id: int) -> int:
     async with AsyncSessionLocal() as session:
         result = await session.execute(
-            select(func.count(Subscription.user_id)).where(Subscription.user_id == user_id)
+            select(func.count(Subscription.user_id)).where(
+                Subscription.user_id == user_id)
         )
         return result.scalar()  # Возвращает количество подписок
 
@@ -343,26 +293,3 @@ async def get_user_subscriptions(user_id: int):
         )
         subscriptions = result.scalars().all()
         return subscriptions
-
-# Создание асинхронного движка для работы с SQLite
-DATABASE_URL = "sqlite+aiosqlite:///./manga_bot.db"
-
-# Создаем асинхронный движок
-engine = create_async_engine(DATABASE_URL, echo=False)
-
-
-# Настраиваем фабрику для создания асинхронных сессий
-AsyncSessionLocal = sessionmaker(
-    bind=engine,
-    class_=AsyncSession,  # Используем асинхронную сессию
-    expire_on_commit=False
-)
-
-# Асинхронная функция для создания таблиц
-
-
-async def init_db():
-    async with engine.begin() as conn:
-        print("Создаем таблицы...")
-        await conn.run_sync(Base.metadata.create_all)
-        print("Таблицы созданы.")

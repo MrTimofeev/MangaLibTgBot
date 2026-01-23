@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 
 load_dotenv()
-debug = True
+debug = False
 if debug:
     BOT_TOKEN = os.getenv("BOT_TOKEN1_TG_debug")
 else:

@@ -5,9 +5,11 @@ from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
 from mangabot.bot.config import *
 import uuid
-from mangabot.database.db import create_user, init_db, add_subscription_for_user, remove_subscription_for_user, get_user_subscriptions, get_manga, check_manga_by_id_in_db, get_random_manga, remove_all_subscriptions_for_user, count_user_subscriptions
+from mangabot.database.crud import create_user, add_subscription_for_user, remove_subscription_for_user, get_user_subscriptions, get_manga, check_manga_by_id_in_db, get_random_manga, remove_all_subscriptions_for_user, count_user_subscriptions
+from mangabot.database.session import init_db
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from mangabot.parser.mangalib.mangalib_parser_last_chapter import parse_manga
+from mangabot.parser.mangalib.mangalib_parser_last_chapter import new_chapter
+from mangabot.bot.message import message_manga, message_manga_list, message_start
 
 dp_Manga_Bot = Dispatcher(storage=MemoryStorage())
 router = Router()
@@ -70,16 +72,7 @@ async def command_start_handler(message: Message):
 
     if user:
         await message.answer(
-            text=f"""🎉 <b>Привет! {username}</b> Я — бот, который поможет тебе следить за выходом новых глав твоей любимой манги на <b>MangaLib</b>. 📚
-
-🔍 <b>Как пользоваться:</b>
-1. Введи название манги или воспользуйся поиском через <code>@Manga_Lib_Notify_Bot</code> в любом чате.
-2. Найди нужный тайтл и нажми кнопку <b>«Подписаться!»</b>.
-
-🚀 <b>Что дальше?</b>  
-Как только выйдет новая глава, я отправлю тебе уведомление, чтобы ты первым узнал о продолжении! 💌
-
-✨ Готов начать? Просто начни поиск и подписывайся на любимые тайтлы!""",
+            text=message_start(username),
             reply_markup=keyboard_start_inline)
         await message.answer("Нажми кнопку ниже чтобы получить случайную мангу", reply_markup=keyboard_start_button)
     else:
@@ -119,16 +112,13 @@ async def inline_search(query: types.InlineQuery):
     # Ограничиваем до 40 записей сразу в базе данных
     for anime in anime_list[:40]:  # Ограничение уже должно быть в get_manga
         result_id = str(uuid.uuid4())
-        message_content = (
-            f"<b>{anime.title}</b>\n"
-            f'<a href="{anime.photo_url}">&#8205;</a>\n'
-            f'Ссылка на мангу: <a href="{anime.url}">читать</a>'
-        )
-
+        message_content = message_manga(
+            anime.title, anime.source, anime.photo_url, anime.url)
         results.append(
             types.InlineQueryResultArticle(
                 id=result_id,
                 title=anime.title,
+                description=anime.source,
                 input_message_content=types.InputTextMessageContent(
                     message_text=message_content,
                     parse_mode="HTML"
@@ -189,7 +179,7 @@ async def handle_manga_list(call: types.CallbackQuery):
             for manga in subscriptions:
                 await call.bot.send_message(
                     call.from_user.id,
-                    f"📚 <b>{manga.manga.title}</b>\nСсылка на мангу: <a href='{manga.manga.url}'>читать</a>",
+                    message_manga_list(manga.manga.title, manga.manga.url),
                     parse_mode="HTML",
                     reply_markup=unsubscribe_keyboard(manga.manga.id)
                 )
@@ -243,11 +233,8 @@ async def handle_manga_delete(call: types.CallbackQuery):
 @dp_Manga_Bot.callback_query(F.data.startswith("random_manga"))
 async def handle_random_manga1(call: types.CallbackQuery):
     manga = await get_random_manga()
-    message_content = f"""
-<b>{manga.title}</b>
-<a href="{manga.photo_url}">&#8205;</a>
-Ссылка на мангу: <a href="{manga.url}">читать</a>
-"""
+    message_content = message_manga(
+        manga.title, manga.source, manga.photo_url, manga.url)
     await call.bot.send_message(call.from_user.id, message_content)
     await call.answer()
 
@@ -255,11 +242,8 @@ async def handle_random_manga1(call: types.CallbackQuery):
 @dp_Manga_Bot.message(F.text == 'Случайная манга')
 async def handle_random_manga2(message: Message):
     manga = await get_random_manga()
-    message_content = f"""
-<b>{manga.title}</b>
-<a href="{manga.photo_url}">&#8205;</a>
-Ссылка на мангу: <a href="{manga.url}">читать</a>
-"""
+    message_content = message_manga(
+        manga.title, manga.source, manga.photo_url, manga.url)
     await message.answer(message_content)
 
 # Функция для инициализации базы данных при запуске
@@ -269,5 +253,5 @@ async def on_startup(manga_bot):
     await init_db()
     # Создаем и запускаем планировщик каждые 2 минуты
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(parse_manga, 'interval', minutes=2, args=[manga_bot])
+    scheduler.add_job(new_chapter, 'interval', minutes=2, args=[manga_bot])
     scheduler.start()
