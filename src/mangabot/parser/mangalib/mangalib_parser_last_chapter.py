@@ -7,10 +7,8 @@ import asyncio
 
 from mangabot.models.mangalib_model import Mangalib
 from pydantic import ValidationError
-
-
-# from concurrent.futures import ThreadPoolExecutor
-# from MangaBot.database.db import save_manga_and_chapter
+from mangabot.database.crud import save_manga_and_chapter
+from mangabot.utils.text import normalize_for_search
 
 
 HEADERS = {
@@ -61,7 +59,6 @@ def sync_parse():
 
             _dict["photo_url"] = item["cover"]["default"]
             _dict["thumbnail_url"] = item["cover"]["thumbnail"]
-
             result_dict.append(_dict)
 
     except json.JSONDecodeError:
@@ -73,51 +70,30 @@ def sync_parse():
     return result_dict
 
 
-# data = sync_parse()
 
 
-async def new_chapter():
+async def new_chapter(bot):
     async with httpx.AsyncClient() as client:
         response = await client.get('https://api.cdnlibs.org/api/latest-updates', headers=HEADERS, params=PARAMS)
 
         data = response.json()
 
-        # pprint.pprint(data)
-
-        chapters = []
-
         for item in data["data"]:
             try:
                 chapter = Mangalib(**item)
-                chapters.append(chapter)
-                print(f"{chapter.title} - {chapter.chapter_number}")
-                # pprint.pprint(chapter)
+                await save_manga_and_chapter(
+                    chapter.title,
+                    search_title=normalize_for_search(chapter.title),
+                    manga_url=chapter.manga_url,
+                    chapter_number=chapter.chapter_number,
+                    chapter_url=chapter.chapter_url,
+                    photo_url=chapter.photo_url,
+                    thumbnail_url=chapter.thumbnail_url,
+                    source=chapter.source,
+                    bot=bot
+                )
             except ValidationError as e:
-                print("Ошибка парсинга главы:")
-                for err in e.errors():
-                    print(f"  {err["loc"] - {err['msg']}}")
+                print(f"Ошибка парсинга главы: {e}")
                 continue
-
-
-asyncio.run(new_chapter())
-
-# # Асинхронная обертка для функции парсинга
-# async def parse_manga(bot):
-#     loop = asyncio.get_running_loop()
-
-#     # Используем ThreadPoolExecutor для запуска синхронной функции
-#     with ThreadPoolExecutor() as pool:
-#         result_dict = await loop.run_in_executor(pool, sync_parse)
-
-#      # Сохранение манги и глав в базу данных
-#     for manga_info in result_dict:
-#         title = manga_info["Manga_name"]
-#         manga_url = manga_info["link_manga"]
-#         chapter_number = manga_info["new_chapter"]  # Получаем номер главы
-#         chapter_url = manga_info["new_chapter_link"]
-#         photo_url = manga_info["photo_url"]
-#         thumbnail_url = manga_info["thumbnail_url"]
-
-#         await save_manga_and_chapter(title, manga_url, chapter_number, chapter_url, photo_url, thumbnail_url, bot)
-
-#     print("Парсинг завершён и данные сохранены.")
+            
+        print("Парсинг завершён и данные сохранены.")

@@ -3,6 +3,11 @@ import httpx
 from mangabot.models.remanga_model import Remanga
 from pydantic import ValidationError
 import asyncio
+from mangabot.utils.text import normalize_for_search
+from mangabot.database.session import save_manga, init_db
+from mangabot.utils.text import clean_title
+import time
+import random
 
 import pprint
 
@@ -23,38 +28,76 @@ HEADERS = {
     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36',
 }
 
-PARAMS = {
-    'count': '20',
-    'page': '1',
-}
-
 
 def sync_pars():
-    response = requests.get(
-        'https://api.remanga.org/api/v2/titles/last-chapters/', params=PARAMS, headers=HEADERS)
+    response = requests.get('https://api.remanga.org/api/v2/search/catalog/https://api.remanga.org/api/v2/search/catalog/?count=30&page=1')
 
     pprint.pprint(response.json())
 
 
 async def new_chapter():
+    count = 500
+    flag = True
     async with httpx.AsyncClient() as client:
-        response = await client.get('https://api.remanga.org/api/v2/titles/last-chapters/', headers=HEADERS, params=PARAMS)
+        while flag:
+            response = requests.get(f'https://api.remanga.org/api/v2/search/catalog/?count=30&page={count}&ordering=-score', headers=HEADERS)
+            response.raise_for_status()
+            # time.sleep(random.randint(2, 5))
 
-        data = response.json()
-
-        chapters = []
-
-        for item in data["results"]:
+            result_dict = []
             try:
-                chapter = Remanga(**item)
-                chapters.append(chapter)
-                pprint.pprint(chapter)
-                break
-            except ValidationError as e:
-                print("Ошибка парсинга главы:")
-                for err in e.errors():
-                    print(f"  {err["loc"] - {err['msg']}}")
-                continue
+                data = response.json()
+                if count == 1000:
+                    flag = False
+
+                for item in data["results"]:
+                    _dict = {}
+                    if item["main_name"] == "" or item["main_name"] == None:
+                        _dict["Manga_name"] = item["secondary_name"].lower()
+                    else:
+                        _dict["Manga_name"] = item["main_name"].lower()
+                    title_name = clean_title(item['dir'])
+                    _dict["link_manga"] = f"https://remanga.org/manga/{title_name}/main"
+                    _dict["new_chapter"] = "Том 1 Глава 1"
+                    _dict["new_chapter_link"] = f"https://remanga.org/manga/{title_name}/main"
+                    _dict["photo_url"] = f"https://remanga.org{item["cover"]["high"]}" if  len(item["cover"]) != 0 else "" # TODO: У некоторых махв нет картинки
+                    _dict["thumbnail_url"] = f"https://remanga.org/{item["cover"]["low"]}" if  len(item["cover"]) != 0 else ""
+
+                    result_dict.append(_dict)
+                    for manga_info in result_dict:
+                        title = manga_info["Manga_name"]
+                        search_title = normalize_for_search(title)
+                        manga_url = manga_info["link_manga"]
+                        # Получаем номер главы
+                        chapter_number = manga_info["new_chapter"]
+                        chapter_url = manga_info["new_chapter_link"]
+                        photo_url = manga_info["photo_url"]
+                        thumbnail_url = manga_info["thumbnail_url"]
+                        source = "remanga"
+                        await save_manga(title, search_title, manga_url, chapter_number, chapter_url, photo_url, thumbnail_url, source)
+
+                print(f"[INFO] Обработана {count} страница, количество тайтлов: {len(result_dict)}")
+                count += 1
+            except Exception as e:
+                print(f"Ошибка при парсинге {e}")
+                
 
 
-asyncio.run(new_chapter())
+async def on_startup():
+    await init_db()
+
+
+async def main() -> None:
+    await on_startup()
+    await new_chapter()
+
+
+if __name__ == "__main__":
+    # Запускаем основную функцию
+    try:
+        asyncio.run(main())
+    except (KeyboardInterrupt, SystemExit) as e:
+        print(f"Ошибка при завершении: {e}")
+
+
+# TODO:Доделать полный парсинг пока он только делать запрос к 1 странице (из-за большого количества быстрых запросов он блочится)
