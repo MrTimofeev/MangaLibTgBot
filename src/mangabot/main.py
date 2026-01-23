@@ -3,8 +3,8 @@ from aiogram import Bot
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
-from MangaBot.bot import handlers as handlers_manga_bot
-from MangaBot.bot import config as config_manga_bot
+from mangabot.bot import handlers as handlers_manga_bot
+from mangabot.bot import config as config_manga_bot
 
 
 async def start_bot(handlers, dp, config):
@@ -25,10 +25,3 @@ async def main() -> None:
     except Exception as e:
         print(f"Ошибка при запуске бота: {e}")
 
-
-if __name__ == "__main__":
-    # Запускаем основную функцию
-    try:
-        asyncio.run(main())
-    except (KeyboardInterrupt, SystemExit) as e:
-        print(f"Ошибка при завершении: {e}")
