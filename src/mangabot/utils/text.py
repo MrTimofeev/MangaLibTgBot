@@ -30,3 +30,9 @@ def normalize_for_search(text: str) -> str:
 
 def clean_title(title: str) -> str:
     return re.sub(r'[^a-zA-Z0-9]+$', '', title)
+
+def normalize_adult_status(is_adult: str) -> bool:
+    if "18+" in is_adult:
+        return True
+    
+    return False
