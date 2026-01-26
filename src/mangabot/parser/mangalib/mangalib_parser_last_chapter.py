@@ -5,11 +5,11 @@ import pprint
 import httpx
 import asyncio
 
-from mangabot.models.mangalib_model import Mangalib
+from mangabot.schemas.mangalib import Mangalib
 from pydantic import ValidationError
 from mangabot.database.crud import save_manga_and_chapter
 from mangabot.utils.text import normalize_for_search
-
+from mangabot.mappers.mangalib import mangalib_manga_to_dto
 
 HEADERS = {
     'accept': '*/*',
@@ -39,37 +39,15 @@ def sync_parse():
     response = requests.get(
         'https://api.cdnlibs.org/api/latest-updates', params=PARAMS, headers=HEADERS)
 
-    result_dict = []
-    try:
-        data = json.loads(response.text)
-        for item in data["data"]:
-            _dict = {}
+    data = response.json()
 
-            _dict["Manga_name"] = item["rus_name"].lower()
-            _dict["link_manga"] = f"https://mangalib.org/ru/manga/{item['slug_url']}"
-            try:
-                Volume = item["metadata"]["latest_items"]["items"][0]["volume"]
-                Chapter = item["metadata"]["latest_items"]["items"][0]["number"]
-            except:
-                Volume = 1
-                Chapter = 1
-
-            _dict["new_chapter"] = f"Том {Volume} Глава {Chapter}"
-            _dict["new_chapter_link"] = f"https://mangalib.org/ru/{item['slug_url']}/read/v{Volume}/c{Chapter}"
-
-            _dict["photo_url"] = item["cover"]["default"]
-            _dict["thumbnail_url"] = item["cover"]["thumbnail"]
-            result_dict.append(_dict)
-
-    except json.JSONDecodeError:
-        print("Ошибка: данные не в формате JSON")
-        data = None
-
-    pprint.pprint(result_dict)
-
-    return result_dict
-
-
+    for item in data["data"]:
+        try:
+            chapter = Mangalib(**item)
+            pprint.pprint(chapter)
+        except ValidationError as e:
+            print(f"Ошибка парсинга главы: {e}")
+            continue
 
 
 async def new_chapter(bot):
@@ -81,19 +59,16 @@ async def new_chapter(bot):
         for item in data["data"]:
             try:
                 chapter = Mangalib(**item)
+                dto_chapter = mangalib_manga_to_dto(chapter)
                 await save_manga_and_chapter(
-                    chapter.title,
-                    search_title=normalize_for_search(chapter.title),
-                    manga_url=chapter.manga_url,
-                    chapter_number=chapter.chapter_number,
-                    chapter_url=chapter.chapter_url,
-                    photo_url=chapter.photo_url,
-                    thumbnail_url=chapter.thumbnail_url,
-                    source=chapter.source,
+                    dto=dto_chapter,
                     bot=bot
                 )
+                pprint.pprint(dto_chapter.title)
             except ValidationError as e:
                 print(f"Ошибка парсинга главы: {e}")
                 continue
-            
-        print("Парсинг завершён и данные сохранены.")
+
+        print("Парсинг mangalib завершён и данные сохранены.")
+        
+        

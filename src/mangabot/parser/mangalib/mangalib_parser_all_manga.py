@@ -4,8 +4,9 @@ import json
 import random
 import requests
 from mangabot.utils.text import normalize_for_search
-from mangabot.database.session import save_manga, init_db
-
+from mangabot.database.crud import save_manga
+from mangabot.database.session import init_db
+from mangabot.database.dto import MangaSave
 # https://api.mangalib.me/api/manga/179033--a-super-villain-daily-life?fields[]=summary
 # Вот запрос чтобы вытянуть описание у манги, там еще можно много чего вытянуть если знать фильтры
 
@@ -35,7 +36,8 @@ async def sync_parse():
     count = 18
     flag = True
     while flag:
-        response = requests.get(f'https://api.cdnlibs.org/api/manga?page={count}&site_id[]=1')
+        response = requests.get(
+            f'https://api.cdnlibs.org/api/manga?page={count}&site_id[]=1')
         response.raise_for_status()
         time.sleep(random.randint(10, 15))
 
@@ -62,16 +64,19 @@ async def sync_parse():
 
                 # Сохранение манги и глав в базу данных
             for manga_info in result_dict:
-                title = manga_info["Manga_name"]
-                search_title = normalize_for_search(title)
-                manga_url = manga_info["link_manga"]
-                # Получаем номер главы
-                chapter_number = manga_info["new_chapter"]
-                chapter_url = manga_info["new_chapter_link"]
-                photo_url = manga_info["photo_url"]
-                thumbnail_url = manga_info["thumbnail_url"]
-                source = "mangalib"
-                await save_manga(title, search_title, manga_url, chapter_number, chapter_url, photo_url, thumbnail_url, source)
+                manga = MangaSave(
+                    title=manga_info["Manga_name"],
+                    search_title=normalize_for_search(
+                        manga_info["Manga_name"]),
+                    manga_url=manga_info["link_manga"],
+                    chapter_number=manga_info["new_chapter"],
+                    chapter_url=manga_info["new_chapter_link"],
+                    photo_url=manga_info["photo_url"],
+                    thumbnail_url=manga_info["thumbnail_url"],
+                    source="mangalib"
+                )
+
+                await save_manga(manga)
 
             print(f"[INFO] Обработана {count} страница")
             count += 1
