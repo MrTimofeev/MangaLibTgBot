@@ -1,9 +1,8 @@
-from mangabot.main import main
+from mangabot.main import start_bot
 import asyncio
 
 if __name__ == "__main__":
-    # Запускаем основную функцию
     try:
-        asyncio.run(main())
+        asyncio.run(start_bot())
     except (KeyboardInterrupt, SystemExit) as e:
         print(f"Ошибка при завершении: {e}")
