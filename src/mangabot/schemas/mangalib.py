@@ -1,4 +1,5 @@
 from pydantic import BaseModel, ConfigDict, model_validator
+from mangabot.utils.text import normalize_for_search, normalize_adult_status
 from typing import Any, List
 
 BASE_URL = "https://mangalib.org"
@@ -6,7 +7,7 @@ BASE_URL = "https://mangalib.org"
 
 class LatestChapterItem(BaseModel):
     id: int
-    volume: str  # часто приходит как строка "1", "0", "1.5" — не int!
+    volume: str  
     number: str
 
 class LatestItems(BaseModel):
@@ -19,6 +20,7 @@ class RawTitle(BaseModel):
     rus_name: str
     slug_url: str
     cover: dict
+    
 
 class RawManga(BaseModel):
     id: int
@@ -26,19 +28,24 @@ class RawManga(BaseModel):
     slug_url: str
     cover: dict
     metadata: Metadata
-
+    ageRestriction: dict
+    status: dict
     model_config = ConfigDict(extra="ignore")
 
 
 class Mangalib(BaseModel):
     id: int
     title: str
+    search_title: str
     manga_url: str
     chapter_number: str
     chapter_url: str
     photo_url: str
     thumbnail_url: str
+    is_adult: bool
     source: str
+    status: str 
+    translate_status: str # TODO: а нужно ли мне вообще это?
     model_config = ConfigDict(extra="ignore")
 
     @model_validator(mode='before')
@@ -49,7 +56,6 @@ class Mangalib(BaseModel):
 
         raw = RawManga(**data)
         
-        
         latest_items = raw.metadata.latest_items.items
         
         if not latest_items:
@@ -59,20 +65,28 @@ class Mangalib(BaseModel):
         last_chapter = latest_items[0]
 
         title = raw.rus_name
+        search_title = normalize_for_search(raw.rus_name) 
         manga_url = f"{BASE_URL}/ru/manga/{raw.slug_url}"
         chapter_number = f"Том {last_chapter.volume} Глава {last_chapter.number}"
         chapter_url = f"{BASE_URL}/ru/{raw.slug_url}/read/v{last_chapter.volume}/c{last_chapter.number}"
         photo_url = f"{raw.cover.get('default', "")}"
         thumbnail_url = f"{raw.cover.get('thumbnail', "")}"
+        is_adult = normalize_adult_status(raw.ageRestriction.get("label", ''))
+        status = raw.status.get('label', '')
+        translate_status = ""
         source = "mangalib"
         return {
             "id": raw.id,
             "title": title,
+            "search_title": search_title,
             "manga_url": manga_url,
             "chapter_number": chapter_number,
             "chapter_url": chapter_url,
             "photo_url": photo_url,
             "thumbnail_url": thumbnail_url,
+            "is_adult": is_adult,
+            'status': status,
+            "translate_status": translate_status,
             "source": source
         }
 
