@@ -13,3 +13,7 @@ ADMIN = os.getenv("ADMINS")
 MAX_SUBSCRIPTIONS = os.getenv("MAX_SUBSCRIPTIONS")
 BOT_NAME = "MANGA_BOT"
 
+SOURCES = {
+    "mangalib": {"name": "MangaLib", "enable": True},
+    "remanga": {"name": "Ramanga", "enable": True}
+}
