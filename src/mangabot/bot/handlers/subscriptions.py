@@ -6,6 +6,7 @@ from mangabot.bot.keyboards.inline import unsubscribe_keyboard
 from mangabot.database.crud import get_user_subscriptions, count_user_subscriptions, check_manga_by_id_in_db, add_subscription_for_user, remove_subscription_for_user, remove_all_subscriptions_for_user
 from mangabot.messages.templates import message_manga_list
 from mangabot.bot.config import ADMIN, MAX_SUBSCRIPTIONS
+from mangabot.utils.logger import logger
 
 router = Router()
 
@@ -34,7 +35,7 @@ async def handle_subscribe(call: CallbackQuery):
             # Манги нет в базе данных
             await call.bot.send_message(call.from_user.id, "Что-то пошло не так. Возможно, манга закончена или её нет в базе. Приносим свои извинения.")
     except Exception as e:
-        print(f"Что-то пошло не так: {e}")
+        logger.warning(f"Про подписке проишла ошибка: {e}")
     await call.answer()
 
 
@@ -57,8 +58,7 @@ async def handle_manga_list(call: CallbackQuery):
             # Если у пользователя нет подписок
             await call.bot.send_message(call.from_user.id, "Вы не подписаны ни на одну мангу.")
     except Exception as e:
-        # Обрабатываем возможные ошибки
-        print(f"Произошла ошибка при получении списка подписок: {e}")
+        logger.warning(f"Произошла ошибка при получаении списка подписок: {e}")
     finally:
         await call.answer()
 
@@ -83,8 +83,7 @@ async def handle_unsubscribe(call: CallbackQuery):
             # Манги нет в базе данных
             await call.bot.send_message(call.from_user.id, "Манга не найдена в базе. Возможно, она уже удалена или вы не были на неё подписаны.")
     except Exception as e:
-        # Обрабатываем возможные ошибки
-        print(f"Произошла ошибка при удалении подписки: {e}")
+        logger.warning(f"Произошла ошибка при удалении подписки: {e}")
     finally:
         await call.answer()
 

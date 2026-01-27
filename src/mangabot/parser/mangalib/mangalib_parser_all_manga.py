@@ -3,10 +3,14 @@ import time
 import json
 import random
 import requests
+
 from mangabot.utils.text import normalize_for_search
 from mangabot.database.crud import save_manga
 from mangabot.database.session import init_db
 from mangabot.database.dto import MangaSave
+from mangabot.utils.logger import logger
+
+
 # https://api.mangalib.me/api/manga/179033--a-super-villain-daily-life?fields[]=summary
 # Вот запрос чтобы вытянуть описание у манги, там еще можно много чего вытянуть если знать фильтры
 
@@ -77,11 +81,11 @@ async def sync_parse():
                 )
 
                 await save_manga(manga)
-
-            print(f"[INFO] Обработана {count} страница")
+            
+            logger.info(f"Обработана {count} страница")
             count += 1
-        except json.JSONDecodeError:
-            print("Ошибка: данные не в формате JSON")
+        except json.JSONDecodeError as e:
+            logger.error(f"Данные не в формате JSON", exc_info=True)
 
 
 async def on_startup():
@@ -98,4 +102,4 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit) as e:
-        print(f"Ошибка при завершении: {e}")
+        logger.critical(f"Ошибка при завершении {e}", exc_info=True)

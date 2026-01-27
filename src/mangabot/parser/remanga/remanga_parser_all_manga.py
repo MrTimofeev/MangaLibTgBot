@@ -1,18 +1,16 @@
 import requests
 import httpx
-from mangabot.schemas.remanga import Remanga
-from pydantic import ValidationError
 import asyncio
+import pprint
+import time
+
 from mangabot.utils.text import normalize_for_search
 from mangabot.database.crud import save_manga
 from mangabot.database.session import init_db
 from mangabot.utils.text import clean_title
+from mangabot.utils.logger import logger
 from mangabot.database.dto import MangaSave
 
-import time
-import random
-
-import pprint
 
 HEADERS = {
     'accept': '*/*',
@@ -86,12 +84,11 @@ async def new_chapter():
                         )
 
                         await save_manga(manga)
-
-                print(
-                    f"[INFO] Обработана {count} страница, количество тайтлов: {len(result_dict)}")
+                logger.info(
+                    f"Обработана {count} страницаБ количество тайтлов: {len(result_dict)}")
                 count += 1
             except Exception as e:
-                print(f"Ошибка при парсинге {e}")
+                logger.error(f"Ошибка при парсинге: {e}", exc_info=True)
 
 
 async def on_startup():
@@ -108,7 +105,6 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit) as e:
-        print(f"Ошибка при завершении: {e}")
-
+        logger.critical(f"Ошибка при завершении: {e}", exc_info=True)
 
 # TODO:Доделать полный парсинг пока он только делать запрос к 1 странице (из-за большого количества быстрых запросов он блочится)

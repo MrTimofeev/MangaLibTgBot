@@ -12,9 +12,11 @@ from mangabot.bot.handlers.start import router as start_router
 from mangabot.bot.handlers.inline import router as inline_router
 from mangabot.bot.handlers.subscriptions import router as subs_router
 from mangabot.bot.handlers.settings import router as settings_router
+from mangabot.utils.logger import logger
 
 async def start_bot():
     try:
+        logger.info("Запуск бота")
         bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 
         dp = Dispatcher()
@@ -25,14 +27,17 @@ async def start_bot():
         dp.include_router(settings_router)
         
         await init_db()
+        logger.info("База данных инициализирована")
 
         scheduler = AsyncIOScheduler()
         scheduler.add_job(check_new_chapters, 'interval',
                           minutes=2, args=[bot])
         scheduler.start()
-        print(f"Бот {BOT_NAME} инициализирован успешно")
-
+        logger.info("Планировщик запущен")
+        
+        logger.info("Бот готов к работе") 
         await dp.start_polling(bot)
 
     except Exception as e:
-        print(f"Ошибка при запуске бота {BOT_NAME}: {e}")
+        logger.critical(f"Критическая ошибка при запуске бота: {e}", exc_info=True)
+        raise

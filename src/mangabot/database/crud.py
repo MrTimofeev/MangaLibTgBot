@@ -7,6 +7,8 @@ from sqlalchemy import func, delete
 from mangabot.database.session import AsyncSessionLocal
 from mangabot.messages.templates import message_last_hapter_subsribe
 from mangabot.database.dto import MangaSave
+from mangabot.utils.logger import logger
+
 import random
 
 
@@ -234,7 +236,7 @@ async def remove_all_subscriptions_for_user(user_id: int) -> bool:
             return True
         except Exception as e:
             await session.rollback()  # Откат транзакции в случае ошибки
-            print(f"Ошибка при удалении подписок: {e}")
+            logger.error(f"Ошибка при удалении подписок: {e}")
             return False
 
 

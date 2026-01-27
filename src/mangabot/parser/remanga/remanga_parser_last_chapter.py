@@ -1,12 +1,14 @@
 import requests
 import httpx
-from mangabot.schemas.remanga import Remanga
-from pydantic import ValidationError
 import asyncio
-from mangabot.database.crud import save_manga_and_chapter
-from mangabot.utils.text import normalize_for_search
-from mangabot.mappers.remanga import remanga_manga_to_dto
 import pprint
+
+from pydantic import ValidationError
+
+from mangabot.schemas.remanga import Remanga
+from mangabot.database.crud import save_manga_and_chapter
+from mangabot.mappers.remanga import remanga_manga_to_dto
+from mangabot.utils.logger import logger
 
 HEADERS = {
     'accept': '*/*',
@@ -42,7 +44,7 @@ def sync_pars():
             chapter = Remanga(**item)
             pprint.pprint(chapter)
         except ValidationError as e:
-            print(f"Ошибка прасинга главы: {e}")
+            logger.error(f"Ошибка парсинга главы: {e}", exc_info=True)
             continue
 
 
@@ -61,6 +63,7 @@ async def new_chapter(bot):
                     bot=bot
                 )
             except ValidationError as e:
-                print(f"Ошибка парсинга главы:{e}")
+                logger.error(f"Ошибка парсинга главы: {e}", exc_info=True)
                 continue
-        print("Парсинг remanga завершён и данные сохранены.")
+        
+        logger.info("Парсинг remanga завершен и данные сохранены.")

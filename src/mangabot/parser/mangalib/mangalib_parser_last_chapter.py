@@ -4,12 +4,12 @@ import requests
 import pprint
 import httpx
 import asyncio
+from pydantic import ValidationError
 
 from mangabot.schemas.mangalib import Mangalib
-from pydantic import ValidationError
 from mangabot.database.crud import save_manga_and_chapter
-from mangabot.utils.text import normalize_for_search
 from mangabot.mappers.mangalib import mangalib_manga_to_dto
+from mangabot.utils.logger import logger
 
 HEADERS = {
     'accept': '*/*',
@@ -46,7 +46,7 @@ def sync_parse():
             chapter = Mangalib(**item)
             pprint.pprint(chapter)
         except ValidationError as e:
-            print(f"Ошибка парсинга главы: {e}")
+            logger.error(f"Ошибка при парсинге главы: {e}", exc_info=True) 
             continue
 
 
@@ -66,9 +66,9 @@ async def new_chapter(bot):
                 )
                 pprint.pprint(dto_chapter.title)
             except ValidationError as e:
-                print(f"Ошибка парсинга главы: {e}")
+                logger.error(f"Ошибка при парсинге главы: {e}", exc_info=True) 
                 continue
-
-        print("Парсинг mangalib завершён и данные сохранены.")
+            
+        logger.info("Парсинг mangalib завершен и данные сохранены.")
         
         

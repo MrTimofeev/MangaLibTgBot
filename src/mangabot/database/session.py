@@ -1,7 +1,8 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
-from mangabot.database.model import Base
 
+from mangabot.database.model import Base
+from mangabot.utils.logger import logger
 
 # Создание асинхронного движка для работы с SQLite
 DATABASE_URL = "sqlite+aiosqlite:///./manga_bot.db"
@@ -17,11 +18,9 @@ AsyncSessionLocal = sessionmaker(
     expire_on_commit=False
 )
 
-# Асинхронная функция для создания таблиц
-
 
 async def init_db():
     async with engine.begin() as conn:
-        print("Создаем таблицы...")
+        logger.info("Создаем таблицы...")
         await conn.run_sync(Base.metadata.create_all)
-        print("Таблицы созданы.")
+        logger.info("Таблицы созданы.")
