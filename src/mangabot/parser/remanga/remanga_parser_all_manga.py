@@ -60,13 +60,13 @@ async def new_chapter():
                     else:
                         _dict["Manga_name"] = item["main_name"]
                     title_name = clean_title(item['dir'])
-                    _dict["link_manga"] = f"https://remanga.org/manga/{title_name}/main"
+                    _dict["link_manga"] = f"/manga/{title_name}/main"
                     _dict["new_chapter"] = "Том 1 Глава 1"
-                    _dict["new_chapter_link"] = f"https://remanga.org/manga/{title_name}/main"
-                    _dict["photo_url"] = f"https://remanga.org{item["cover"]["high"]}" if len(
+                    _dict["new_chapter_link"] = f"/manga/{title_name}/main"
+                    _dict["photo_url"] = f"{item["cover"]["high"]}" if len(
                         # TODO: У некоторых манхв нет картинки
                         item["cover"]) != 0 else ""
-                    _dict["thumbnail_url"] = f"https://remanga.org/{item["cover"]["low"]}" if len(
+                    _dict["thumbnail_url"] = f"/{item["cover"]["low"]}" if len(
                         item["cover"]) != 0 else ""
 
                     result_dict.append(_dict)

@@ -58,9 +58,9 @@ async def sync_parse():
                 else:
                     _dict["Manga_name"] = item["rus_name"].lower()
 
-                _dict["link_manga"] = f"https://mangalib.org/ru/manga/{item['slug_url']}"
+                _dict["link_manga"] = f"/ru/manga/{item['slug_url']}"
                 _dict["new_chapter"] = "Том 1 Глава 1"
-                _dict["new_chapter_link"] = f"https://mangalib.org/ru/{item['slug_url']}/read/v1/c1"
+                _dict["new_chapter_link"] = f"/ru/{item['slug_url']}/read/v1/c1"
                 _dict["photo_url"] = item["cover"]["default"]
                 _dict["thumbnail_url"] = item["cover"]["thumbnail"]
 
