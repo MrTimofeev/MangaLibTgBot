@@ -2,10 +2,11 @@ from aiogram import F, Router
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import CommandStart
 
-from mangabot.database.crud import get_or_create_user, get_random_manga
-from mangabot.messages.templates import message_start, message_manga, message_last_hapter_subsribe
 from mangabot.bot.keyboards.inline import start_keyboard
 from mangabot.bot.keyboards.reply import random_manga_keyboard
+from mangabot.database.crud import get_or_create_user, get_random_manga
+from mangabot.messages.templates import message_start, message_manga, message_last_hapter_subsribe
+from mangabot.utils.url_builder import build_manga_url
 
 router = Router()
 
@@ -28,7 +29,11 @@ async def command_start_handler(message: Message):
 async def handle_random_manga1(call: CallbackQuery):
     manga = await get_random_manga()
     message_content = message_manga(
-        manga.title, manga.source, manga.photo_url, manga.url)
+        manga.title,
+        manga.source,
+        manga.photo_url,
+        build_manga_url(manga.source, manga.url)
+    )
     await call.bot.send_message(call.from_user.id, message_content)
     await call.answer()
 
@@ -37,7 +42,11 @@ async def handle_random_manga1(call: CallbackQuery):
 async def handle_random_manga2(message: Message):
     manga = await get_random_manga()
     message_content = message_manga(
-        manga.title, manga.source, manga.photo_url, manga.url)
+        manga.title, 
+        manga.source, 
+        manga.photo_url, 
+        build_manga_url(manga.source, manga.url)
+    )
     await message.answer(message_content)
 
 

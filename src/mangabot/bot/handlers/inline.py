@@ -1,11 +1,13 @@
 import asyncio
 import uuid
+
 from aiogram import Router
 from aiogram.types import InlineQuery, InlineQueryResultArticle, InputTextMessageContent
 
 from mangabot.messages.templates import message_manga
 from mangabot.bot.keyboards.inline import subscribe_keyboard
 from mangabot.database.crud import get_manga, get_or_create_user
+from mangabot.utils.url_builder import build_manga_url
 from mangabot.bot.config import SOURCES
 
 router = Router()
@@ -40,7 +42,7 @@ async def inline_search(query: InlineQuery):
             manga.title,
             manga.source,
             manga.photo_url, 
-            manga.url
+            build_manga_url(manga.source, manga.url)
         )
         results.append(
             InlineQueryResultArticle(

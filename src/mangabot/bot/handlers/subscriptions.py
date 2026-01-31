@@ -1,5 +1,4 @@
 from aiogram import F, Router
-
 from aiogram.types import CallbackQuery
 
 from mangabot.bot.keyboards.inline import unsubscribe_keyboard
@@ -7,6 +6,7 @@ from mangabot.database.crud import get_user_subscriptions, count_user_subscripti
 from mangabot.messages.templates import message_manga_list
 from mangabot.bot.config import ADMIN, MAX_SUBSCRIPTIONS
 from mangabot.utils.logger import logger
+from mangabot.utils.url_builder import build_manga_url
 
 router = Router()
 
@@ -50,7 +50,13 @@ async def handle_manga_list(call: CallbackQuery):
             for manga in subscriptions:
                 await call.bot.send_message(
                     chat_id=call.from_user.id,
-                    text=message_manga_list(manga.manga.title, manga.manga.url),
+                    text=message_manga_list(
+                        manga.manga.title,
+                        build_manga_url(
+                            manga.manga.source,
+                            manga.manga.url
+                        )
+                    ),
                     parse_mode="HTML",
                     reply_markup=unsubscribe_keyboard(manga.manga.id)
                 )
