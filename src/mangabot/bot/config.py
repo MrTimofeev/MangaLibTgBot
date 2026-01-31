@@ -17,3 +17,8 @@ SOURCES = {
     "mangalib": {"name": "MangaLib", "enable": True},
     "remanga": {"name": "Ramanga", "enable": True}
 }
+
+BASE_URL = {
+    "mangalib": "https://mangalib.org",
+    "remanga": "https://remanga.org"
+}
