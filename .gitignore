@@ -17,7 +17,6 @@ __pycache__/
 !.env.example
 
 
-
 # VS Code
 .vscode/
 !.vscode/settings.json
@@ -30,3 +29,7 @@ __pycache__/
 *.egg
 build/
 dist/
+
+# Логи
+logs/
+*.log
