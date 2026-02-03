@@ -1,9 +1,10 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, declarative_base
 
-from mangabot.database.model import Base
 from mangabot.utils.logger import logger
 
+
+Base = declarative_base()
 # Создание асинхронного движка для работы с SQLite
 DATABASE_URL = "sqlite+aiosqlite:///./manga_bot.db"
 

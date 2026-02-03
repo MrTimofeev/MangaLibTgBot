@@ -2,11 +2,10 @@ import json
 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint, Boolean
-from sqlalchemy.orm import relationship, declarative_base
+from sqlalchemy.orm import relationship
 
+from mangabot.database.session import Base
 
-# Создаем базовый класс для моделей
-Base = declarative_base()
 
 class User(Base):
     __tablename__ = 'users'
@@ -18,16 +17,18 @@ class User(Base):
     preferred_source = Column(String, nullable=True)  # источник None - все
 
     subscriptions = relationship('Subscription', back_populates='user')
-    
+
     @property
     def sources_list(self) -> list[str] | None:
         if self.preferred_source:
             return json.loads(self.preferred_source)
         return None
-    
+
     @sources_list.setter
     def sources_list(self, value: list[str] | None):
-        self.preferred_source = json.dumps(value, ensure_ascii=False) if value is not None else None
+        self.preferred_source = json.dumps(
+            value, ensure_ascii=False) if value is not None else None
+
 
 class Manga(Base):
     __tablename__ = 'manga'
@@ -55,6 +56,7 @@ class Manga(Base):
     chapters = relationship('Chapter', back_populates='manga')
     subscriptions = relationship('Subscription', back_populates='manga')
 
+
 class Chapter(Base):
     __tablename__ = 'chapters'
 
@@ -64,6 +66,7 @@ class Chapter(Base):
     chapter_url = Column(String, nullable=False)
 
     manga = relationship('Manga', back_populates='chapters')
+
 
 class Subscription(Base):
     __tablename__ = 'subscriptions'
